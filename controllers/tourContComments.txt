@@ -1,0 +1,8 @@
+chained methods used to filter
+/*
+const tours = await Tour.find()
+  .where('duration')
+  .equals(5)
+  .where('difficulty')
+  .equals('easy');
+*/
