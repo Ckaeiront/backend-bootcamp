@@ -128,4 +128,99 @@ exports.aliasTopTours = (req, res, next) => {
   next();
 };
 
-exports.getTourStats = (req, res) => {};
+exports.getTourStats = async (req, res) => {
+  try {
+    // match = select/filter documents. Prepare for grouping
+    // group = group documents together using an acumulator i.e. average, sum, etc.
+    const stats = await Tour.aggregate([
+      {
+        $match: {
+          ratingAverage: { $gte: 4.5 }
+        }
+      },
+      {
+        $group: {
+          _id: '$difficulty',
+          num: { $sum: 1 },
+          numRatings: { $sum: '$ratingsQuantity' },
+          averageRating: { $avg: '$ratingAverage' },
+          averagePrice: { $avg: '$price' },
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' }
+        }
+      },
+      {
+        $sort: { averagePrice: 1 }
+      }
+      // {
+      //   $match: { _id: { $ne: 'easy' } }
+      // }
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        stats
+      }
+    });
+  } catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      message: `an error occured ${err}`
+    });
+  }
+};
+
+exports.getMonthlyPlan = async (req, res) => {
+  try {
+    const year = req.params.year * 1;
+
+    const plan = await Tour.aggregate([
+      // unwind = still have to search it's meaning and use.
+      {
+        $unwind: '$startDates'
+      },
+      {
+        $match: {
+          startDates: {
+            $gte: new Date(`${year}-01-01`),
+            $lte: new Date(`${year}-12-31`)
+          }
+        }
+      },
+      {
+        $group: {
+          _id: { $month: '$startDates' },
+          numTourStarts: { $sum: 1 },
+          tours: { $push: '$name' }
+        }
+      },
+      {
+        $sort: { numTourStarts: -1 }
+      },
+      {
+        $addFields: { month: '$_id' }
+      },
+      {
+        $project: {
+          _id: 0
+        }
+      },
+      {
+        $limit: 11
+      }
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        plan
+      }
+    });
+  } catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      message: `an error occured: ${err}`
+    });
+  }
+};
