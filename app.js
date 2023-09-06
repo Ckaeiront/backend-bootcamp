@@ -1,6 +1,8 @@
 const express = require('express');
 const morgan = require('morgan');
 
+const AppError = require('./utils/appError');
+const errorController = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 
@@ -29,24 +31,15 @@ app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 
 app.all('*', (req, res, next) => {
-  const err = new Error(`Can't find ${req.originalUrl} on this server`);
-  err.status = 'fail';
-  err.statusCode = 404;
+  // const err = new Error(`Can't find ${req.originalUrl} on this server`);
+  // err.status = 'fail';
+  // err.statusCode = 404;
 
-  next(err);
-
+  next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
   // express automatically assumes that the value passed as parameter to next is an error
 });
 
 // central error handler that recieves error values passed in next functions
-app.use((err, req, res, next) => {
-  err.statusCode = err.statusCode || 500; // status code in numbers
-  err.status = err.status || 'error'; // a string that contains the status of the app, such as ok or error/fail;
-
-  res.status(err.statusCode).json({
-    status: err.status,
-    message: err.message
-  });
-});
+app.use(errorController);
 
 module.exports = app;

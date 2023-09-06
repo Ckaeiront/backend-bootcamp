@@ -1,124 +1,95 @@
 const Tour = require('../models/tourModel');
 const APIFeatures = require('../utils/APIFeatures');
-
-// no database yet
+const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
 
 // queries = ?page=value
 // advanced queries = duration{gte}=3
 
-// testado
-exports.getAllTours = async (req, res) => {
-  try {
-    const query = Tour.find();
-    // Tour.find() is the function that returns the query;
+exports.getAllTours = catchAsync(async (req, res, next) => {
+  const query = Tour.find();
+  // Tour.find() is the function that returns the query;
 
-    const features = new APIFeatures(query, req.query)
-      .filter()
-      .fields()
-      .sort()
-      .paginate();
+  const features = new APIFeatures(query, req.query)
+    .filter()
+    .fields()
+    .sort()
+    .paginate();
 
-    const tours = await features.query;
+  const tours = await features.query;
 
-    res.status(200).json({
-      status: 'success',
-      results: tours.length,
-      data: {
-        tours
-      }
-    });
-  } catch (error) {
-    res.status(404).json({
-      status: 'fail',
-      message: `an error occured 🛑 ${error}`
-    });
+  res.status(200).json({
+    status: 'success',
+    results: tours.length,
+    data: {
+      tours
+    }
+  });
+});
+
+exports.getTour = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const tourId = await Tour.findById(id);
+
+  if (!tourId) {
+    return next(new AppError('No tour found with that ID', 404));
   }
-};
 
-// testado
-exports.getTour = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const tourId = await Tour.findById(id);
-
-    res.status(200).json({
-      status: 'success',
-      data: {
-        tourId
-      }
-    });
-  } catch (error) {
-    res.status(404).json({
-      status: 'fail',
-      message: `An error ocurred: ${error}`
-    });
-  }
-};
+  res.status(200).json({
+    status: 'success',
+    data: {
+      tourId
+    }
+  });
+});
 
 // testado
-exports.createTour = async (req, res) => {
-  try {
-    const newTour = await Tour.create(req.body);
+exports.createTour = catchAsync(async (req, res, next) => {
+  const newTour = await Tour.create(req.body);
 
-    res.status(201).json({
-      status: 'success',
-      data: {
-        newTour
-      }
-    });
-  } catch (err) {
-    res.status(400).json({
-      status: 'fail',
-      message: err
-    });
-  }
-};
+  res.status(201).json({
+    status: 'success',
+    data: {
+      newTour
+    }
+  });
+});
 
-// dando erro
-exports.updateTour = async (req, res) => {
-  try {
-    const { id } = req.params;
+exports.updateTour = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
 
-    const updatedTour = await Tour.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true
-    });
+  const updatedTour = await Tour.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true
+  });
 
-    res.status(200).json({
-      status: 'success',
-      data: {
-        tour: updatedTour
-      }
-    });
-  } catch (error) {
-    res.status(404).json({
-      status: 'fail',
-      message: `an error ocurred: ${error}`
-    });
-  }
-};
+  if (!updatedTour)
+    return next(new AppError('No tour found with that ID', 404));
 
-// dando erro
-exports.deleteTour = async (req, res) => {
-  try {
-    const { id } = req.params;
+  res.status(200).json({
+    status: 'success',
+    data: {
+      tour: updatedTour
+    }
+  });
+});
 
-    const deletedTour = await Tour.findByIdAndDelete(id);
+exports.deleteTour = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
 
-    res.status(204).json({
-      status: 'success',
-      data: {
-        deletedTour
-      }
-    });
-  } catch (error) {
-    res.status(404).json({
-      status: 'fail',
-      message: `an error ocurred: ${error}`
-    });
-  }
-};
+  const deletedTour = await Tour.findByIdAndDelete(id);
+
+  if (!deletedTour)
+    return next(new AppError('No tour found with that ID', 404));
+
+  res.status(204).json({
+    status: 'success',
+    data: {
+      deletedTour
+    }
+  });
+});
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = 5;

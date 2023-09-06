@@ -4,11 +4,11 @@
   "rules": {
     "prettier/prettier": "warn",
     "spaced-comment": "off",
-    "no-console": "off",
+    "no-console": "warn",
     "consistent-return": "off",
     "func-names": "off",
     "object-shorthand": "off",
-    "no-process-exit": "off",
+    "no-process-exit": "warn",
     "no-param-reassign": "off",
     "no-return-await": "off",
     "no-underscore-dangle": "off",
